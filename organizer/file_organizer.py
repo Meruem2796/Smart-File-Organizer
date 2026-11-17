@@ -1,6 +1,10 @@
+import logging
 from pathlib import Path
 
+from organizer.file_mover import FileMover
 from organizer.scanner import FileScanner
+
+logger = logging.getLogger(__name__)
 
 
 class FileOrganizer:
@@ -12,6 +16,9 @@ class FileOrganizer:
         )
         self.dry_run = dry_run
         self._planned = set()  # destinations already promised in a dry run
+        self.failures = (
+            []
+        )  # (path, error) pairs from the last organize_directory()
 
     def _check_source(self):
         resolved = self.source_directory.resolve()
@@ -75,17 +82,26 @@ class FileOrganizer:
         if self.dry_run:
             self._planned.add(destination)
             return destination  # pretend: change nothing
-        raise NotImplementedError("Real moves arrive in Stage 4")
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        with FileMover(path, destination) as mover:
+            mover.execute()
+        return destination
 
     def organize_directory(self):
         self._planned = set()  # fresh plan for every run
+        self.failures = []
         summary = {}
         for (
             path
-        ) in (
-            self._scan()
-        ):  # _scan returns a list, so it is safe to change files later
+        ) in self._scan():  # _scan returns a list, so moving files is safe
             category = self.classifier.classify_file(path)
-            self.organize_file(path)
+            try:
+                self.organize_file(path)
+            except (
+                OSError
+            ) as error:  # PermissionError, FileExistsError, ... are all OSError
+                logger.warning("Skipped %s: %s", path.name, error)
+                self.failures.append((path, error))
+                continue  # one bad file must not stop the run
             summary[category] = summary.get(category, 0) + 1
         return summary

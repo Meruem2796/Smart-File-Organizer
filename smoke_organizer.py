@@ -2,7 +2,11 @@ import sys
 from organizer.classifier import FileClassifier
 from organizer.file_organizer import FileOrganizer
 
-organizer = FileOrganizer(sys.argv[1], FileClassifier(), dry_run=True)
-for source, destination in organizer.preview_organization():
-    print(f"{source} -> {destination}")
-print(organizer.organize_directory())
+real = "--real" in sys.argv
+folder = [arg for arg in sys.argv[1:] if arg != "--real"][0]
+
+organizer = FileOrganizer(folder, FileClassifier(), dry_run=not real)
+summary = organizer.organize_directory()
+print("REAL RUN" if real else "DRY RUN", summary)
+for path, error in organizer.failures:
+    print("FAILED:", path, error)
