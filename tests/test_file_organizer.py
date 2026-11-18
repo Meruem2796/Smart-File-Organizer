@@ -101,6 +101,22 @@ class TestFileOrganizerDryRun(OrganizerTestCase):
         with self.assertRaises(ValueError):
             FileOrganizer(Path.home(), self.classifier)
 
+    def test_default_excluded_folders_are_left_alone(self):
+        self.make(".git/objects/logo.png")
+        self.make("node_modules/pkg/logo.png")
+        self.make("AppData/cache.txt")
+        self.make("photo.png")
+        plan = self.rel_plan(self.organizer().preview_organization())
+        self.assertEqual(plan, [("photo.png", "Images/photo.png")])
+
+    def test_excluded_directories_can_be_overridden(self):
+        self.make("logs/app.txt")
+        organizer = FileOrganizer(
+            self.root, self.classifier, excluded_directories=()
+        )
+        plan = self.rel_plan(organizer.preview_organization())
+        self.assertEqual(plan, [("logs/app.txt", "Documents/app.txt")])
+
 
 if __name__ == "__main__":
     unittest.main()

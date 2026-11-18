@@ -2,19 +2,26 @@ import logging
 from pathlib import Path
 
 from organizer.file_mover import FileMover
-from organizer.scanner import FileScanner
+from organizer.scanner import DEFAULT_EXCLUDED_DIRECTORIES, FileScanner
 
 logger = logging.getLogger(__name__)
 
 
 class FileOrganizer:
-    def __init__(self, source_directory, classifier, dry_run=False):
+    def __init__(
+        self,
+        source_directory,
+        classifier,
+        dry_run=False,
+        excluded_directories=DEFAULT_EXCLUDED_DIRECTORIES,
+    ):
         self.source_directory = Path(source_directory)
         self._check_source()
         self.classifier = (
             classifier  # composition: the organizer HAS a classifier
         )
         self.dry_run = dry_run
+        self.excluded_directories = tuple(excluded_directories)
         self._planned = set()  # destinations already promised in a dry run
         self.failures = (
             []
@@ -32,7 +39,11 @@ class FileOrganizer:
             )
 
     def _scan(self):
-        scanner = FileScanner(self.source_directory, recursive=True)
+        scanner = FileScanner(
+            self.source_directory,
+            recursive=True,
+            excluded_directories=self.excluded_directories,
+        )
         category_folders = {
             name.casefold() for name in self.classifier.get_categories()
         }

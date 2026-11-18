@@ -62,6 +62,14 @@ class TestFileScanner(unittest.TestCase):
         with self.assertRaises(NotADirectoryError):
             FileScanner(self.root / "does_not_exist").scan_directory()
 
+    def test_excluded_directories_match_case_insensitively(self):
+        (self.root / "Logs").mkdir()
+        (self.root / "Logs" / "e.txt").write_text("e")
+        scanner = FileScanner(
+            self.root, recursive=True, excluded_directories=["logs"]
+        )
+        self.assertNotIn("e.txt", {p.name for p in scanner.scan_directory()})
+
 
 if __name__ == "__main__":
     unittest.main()
