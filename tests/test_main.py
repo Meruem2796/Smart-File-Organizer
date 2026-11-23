@@ -1,5 +1,3 @@
-import contextlib
-import io
 import logging
 import unittest
 from pathlib import Path
@@ -11,20 +9,6 @@ from tests.helpers import OrganizerTestCase
 
 
 class TestCommandLine(OrganizerTestCase):
-    def run_cli(self, *argv):
-        out, err = io.StringIO(), io.StringIO()
-        with (
-            mock.patch("logging.basicConfig") as basic_config,
-            contextlib.redirect_stdout(out),
-            contextlib.redirect_stderr(err),
-        ):
-            try:
-                code = main.main(list(argv))
-            except SystemExit as exit_:  # argparse exits on bad usage
-                code = exit_.code
-        self.basic_config = basic_config
-        return code, out.getvalue(), err.getvalue()
-
     def test_scan_lists_files_with_metadata(self):
         self.make("a.txt", "abc")
         self.make("sub/b.png")

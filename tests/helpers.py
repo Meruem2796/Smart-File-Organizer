@@ -1,7 +1,11 @@
+import contextlib
+import io
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
+import main
 from organizer.classifier import FileClassifier
 from organizer.file_organizer import FileOrganizer
 
@@ -40,3 +44,18 @@ class OrganizerTestCase(unittest.TestCase):
             )
             for src, dst in plan
         )
+
+    def run_cli(self, *argv):
+        """Run main.main(argv) and return (exit_code, stdout, stderr)."""
+        out, err = io.StringIO(), io.StringIO()
+        with (
+            mock.patch("logging.basicConfig") as basic_config,
+            contextlib.redirect_stdout(out),
+            contextlib.redirect_stderr(err),
+        ):
+            try:
+                code = main.main(list(argv))
+            except SystemExit as exit_:  # argparse exits on bad usage
+                code = exit_.code
+        self.basic_config = basic_config
+        return code, out.getvalue(), err.getvalue()
